@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>독서 근거 찾기 트레이너</title>
+<style>
+  :root{
+    --bg:#1e1e2e;
+    --panel:#262638;
+    --panel2:#2d2d44;
+    --border:#3d3d5c;
+    --text:#e4e4f0;
+    --sub:#9d9db8;
+    --accent:#7c9cff;
+    --accent2:#a78bfa;
+    --green:#4ade80;
+    --red:#f87171;
+    --yellow:#fbbf24;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family: "Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+  }
+  .app{
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+  header{
+    padding:14px 16px;
+    background:linear-gradient(90deg,#2a2a45,#1e1e2e);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  header h1{
+    font-size:16px;
+    margin:0;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .stats{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    font-size:13px;
+    flex-wrap:wrap;
+  }
+  .stat-box{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:10px;
+    padding:5px 10px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .stat-box b{color:var(--yellow); font-size:14px;}
+  #comboDisplay{color:var(--accent2); font-weight:bold;}
+  main{
+    flex:1;
+    display:flex;
+    gap:16px;
+    padding:12px;
+  }
+  @media (max-width:900px){
+    main{flex-direction:column;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    flex:1 1 50%;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    box-shadow:0 4px 20px rgba(0,0,0,0.25);
+  }
+  .panel h2{
+    margin:0 0 12px;
+    font-size:14px;
+    color:var(--sub);
+    display:flex;
+    align-items:center;
+    gap:8px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:10px;
+  }
+  #passageBox{
+    overflow-y:auto;
+    max-height:60vh;
+    font-size:15px;
+    line-height:1.9;
+    user-select:text;
+    padding-right:6px;
+    -webkit-user-select:text;
+  }
+  .line{
+    display:flex;
+    gap:10px;
+    padding:2px 4px;
+    border-radius:6px;
+  }
+  .line:hover{background:rgba(255,255,255,0.03);}
+  .lineno{
+    color:#565676;
+    font-size:11px;
+    width:22px;
+    text-align:right;
+    flex-shrink:0;
+    user-select:none;
+    padding-top:4px;
+  }
+  .linetext{flex:1;}
+  mark.ev-picked{
+    background:rgba(124,156,255,0.35);
+    color:#fff;
+    border-radius:3px;
+    padding:0 1px;
+  }
+  mark.ev-correct{
+    background:rgba(74,222,128,0.4);
+    color:#fff;
+    border-radius:3px;
+    padding:0 1px;
+    box-shadow:0 0 6px rgba(74,222,128,0.5);
+  }
+  mark.ev-wrong{
+    background:rgba(248,113,113,0.35);
+    color:#fff;
+    border-radius:3px;
+    padding:0 1px;
+  }
+  #selPreview{
+    margin-top:10px;
+    font-size:12px;
+    color:var(--sub);
+    background:var(--panel2);
+    border:1px dashed var(--border);
+    border-radius:8px;
+    padding:8px 10px;
+    min-height:20px;
+    word-break:break-word;
+  }
+  #selPreview b{color:var(--accent);}
+  #qArea{overflow-y:auto; max-height:60vh; padding-right:4px;}
+  .q-block{
+    margin-bottom:28px;
+    padding-bottom:20px;
+    border-bottom:1px dashed var(--border);
+  }
+  .q-block:last-child{border-bottom:none;}
+  .question-header{
+    background:linear-gradient(135deg, rgba(124,156,255,0.18), rgba(167,139,250,0.12));
+    border:1px solid var(--accent);
+    border-radius:12px;
+    padding:14px 16px;
+    margin-bottom:16px;
+    margin-top: 4px;
+  }
+  .question-header .q-index-badge{
+    display:inline-block;
+    background:var(--accent);
+    color:#0d0d16;
+    font-size:11px;
+    font-weight:bold;
+    padding:2px 8px;
+    border-radius:20px;
+    margin-bottom:6px;
+  }
+  .question-header .q-main-text{
+    font-size:16px;
+    font-weight:bold;
+    color:#ffffff;
+    line-height:1.4;
+  }
+  .choice-card{
+    background:var(--panel2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:14px;
+    margin-bottom:12px;
+    transition:box-shadow .2s, transform .2s;
+    position:relative;
+    overflow:hidden;
+  }
+  .choice-card.correct-flash{
+    animation:flashGreen .8s ease;
+  }
+  .choice-card.wrong-flash{
+    animation:flashRed .8s ease;
+  }
+  @keyframes flashGreen{
+    0%{box-shadow:0 0 0 0 rgba(74,222,128,0.7);}
+    100%{box-shadow:0 0 0 12px rgba(74,222,128,0);}
+  }
+  @keyframes flashRed{
+    0%{box-shadow:0 0 0 0 rgba(248,113,113,0.7);}
+    100%{box-shadow:0 0 0 12px rgba(248,113,113,0);}
+  }
+  .choice-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:8px;
+  }
+  .choice-num{
+    display:inline-block;
+    background:var(--accent);
+    color:#0d0d16;
+    font-weight:bold;
+    border-radius:50%;
+    width:22px;height:22px;
+    text-align:center;
+    line-height:22px;
+    font-size:12px;
+    flex-shrink:0;
+  }
+  .choice-text{
+    flex:1;
+    font-size:14px;
+    line-height:1.5;
+  }
+  .ox-toggle{
+    display:flex;
+    gap:6px;
+    margin:10px 0;
+  }
+  .ox-btn{
+    flex:1;
+    padding:9px 0;
+    border-radius:8px;
+    border:1px solid var(--border);
+    background:transparent;
+    color:var(--sub);
+    cursor:pointer;
+    font-weight:bold;
+    transition:.15s;
+    font-size:14px;
+  }
+  .ox-btn.o-btn.active{
+    background:rgba(74,222,128,0.2);
+    border-color:var(--green);
+    color:var(--green);
+  }
+  .ox-btn.x-btn.active{
+    background:rgba(248,113,113,0.2);
+    border-color:var(--red);
+    color:var(--red);
+  }
+  .card-controls{
+    display:flex;
+    gap:8px;
+    margin-top:6px;
+    flex-wrap:wrap;
+  }
+  .mini-btn{
+    font-size:12px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    padding:8px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  .mini-btn:hover{border-color:var(--accent); color:var(--accent);}
+  .mini-btn.add-btn{
+    border-color:var(--accent);
+    color:var(--accent);
+  }
+  .evidence-list{
+    margin-top:8px;
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+  }
+  .evidence-item{
+    font-size:12px;
+    background:rgba(124,156,255,0.08);
+    border:1px solid rgba(124,156,255,0.3);
+    border-radius:8px;
+    padding:6px 8px 6px 10px;
+    color:#cfd6ff;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .evidence-item .ev-text{flex:1; word-break:break-word;}
+  .evidence-item .ev-remove{
+    flex-shrink:0;
+    background:none;
+    border:none;
+    color:var(--red);
+    cursor:pointer;
+    font-size:13px;
+    font-weight:bold;
+    padding:2px 6px;
+    border-radius:6px;
+  }
+  .evidence-item .ev-remove:hover{background:rgba(248,113,113,0.15);}
+  .evidence-count-hint{
+    font-size:11px;
+    color:var(--sub);
+    margin-top:4px;
+  }
+  .result-icon{
+    font-size:12.5px;
+    font-weight:bold;
+    margin-top:8px;
+    display:none;
+    border-radius:8px;
+    padding:6px 10px;
+    line-height:1.5;
+  }
+  .result-icon.show{display:block;}
+  .result-icon.ok{background:rgba(74,222,128,0.15); color:var(--green);}
+  .result-icon.bad{background:rgba(248,113,113,0.15); color:var(--red);}
+  .result-icon.partial{background:rgba(251,191,36,0.15); color:var(--yellow);}
+  .footer-actions{
+    margin-top:14px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  .main-btn{
+    flex:1;
+    padding:14px;
+    font-size:15px;
+    font-weight:bold;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
+    transition:.15s;
+  }
+  #gradeBtn{
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    color:#10101c;
+  }
+  #gradeBtn:hover{filter:brightness(1.1);}
+  #gradeBtn:disabled{opacity:0.5; cursor:not-allowed;}
+  #resetBtn{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--sub);
+  }
+  #resetBtn:hover{border-color:var(--red); color:var(--red);}
+  #scoreSummary{
+    margin-top:14px;
+    padding:14px;
+    border-radius:10px;
+    background:var(--panel2);
+    border:1px solid var(--border);
+    display:none;
+  }
+  #scoreSummary.show{display:block;}
+  #scoreSummary h3{margin:0 0 8px; font-size:15px; color:#fff;}
+  #sendStatus{
+    font-size:12px;
+    margin-top:8px;
+    padding:6px 10px;
+    border-radius:8px;
+  }
+  #sendStatus.sending{background:rgba(251,191,36,0.15); color:var(--yellow);}
+  #sendStatus.sent{background:rgba(74,222,128,0.15); color:var(--green);}
+  #sendStatus.error{background:rgba(248,113,113,0.15); color:var(--red);}
+  .pop-score{
+    position:fixed;
+    font-weight:bold;
+    font-size:22px;
+    color:var(--yellow);
+    pointer-events:none;
+    z-index:999;
+    animation:popUp 1s ease forwards;
+  }
+  @keyframes popUp{
+    0%{opacity:1; transform:translateY(0) scale(1);}
+    100%{opacity:0; transform:translateY(-60px) scale(1.3);}
+  }
+  ::-webkit-scrollbar{width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
+
+  /* 이름 입력 모달 */
+  #nameModal{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.85);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:2000;
+    padding:20px;
+  }
+  #nameModal .modal-box{
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:28px 24px;
+    border-radius:16px;
+    width:100%;
+    max-width:340px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.5);
+  }
+  #nameModal h3{
+    margin:0 0 6px;
+    color:#fff;
+    font-size:18px;
+  }
+  #nameModal p{
+    margin:0 0 16px;
+    color:var(--sub);
+    font-size:13px;
+  }
+  #studentNameInput{
+    width:100%;
+    padding:12px;
+    border-radius:10px;
+    border:1px solid var(--border);
+    background:var(--bg);
+    color:#fff;
+    margin-bottom:14px;
+    font-size:15px;
+  }
+  #studentNameInput:focus{outline:none; border-color:var(--accent);}
+  #startBtn{
+    width:100%;
+    padding:13px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    border:none;
+    border-radius:10px;
+    color:#10101c;
+    font-weight:bold;
+    font-size:15px;
+    cursor:pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- 이름 입력 모달 -->
+<div id="nameModal">
+  <div class="modal-box">
+    <h3>📖 독서 근거 찾기 트레이너</h3>
+    <p>본인 이름(또는 이름+번호)을 입력한 뒤 시작해주세요.<br>결과가 선생님께 자동으로 전송됩니다.</p>
+    <input id="studentNameInput" type="text" placeholder="예: 3학년 2반 홍길동" autocomplete="off">
+    <button id="startBtn">시작하기</button>
+  </div>
+</div>
+
+<div class="app">
+  <header>
+    <h1>📖 독서 근거 찾기 트레이너</h1>
+    <div class="stats">
+      <div class="stat-box">⏱ <b id="timerDisplay">00:00</b></div>
+      <div class="stat-box">🔥 콤보 <span id="comboDisplay">0</span></div>
+      <div class="stat-box">🏆 점수 <b id="scoreDisplay">0</b></div>
+    </div>
+  </header>
+  <main>
+    <section class="panel" id="passagePanel">
+      <h2>📄 지문 (드래그하여 근거 선택)</h2>
+      <div id="passageBox"></div>
+      <div id="selPreview">지문에서 문장을 드래그하면 여기에 표시됩니다.</div>
+    </section>
+    <section class="panel" id="questionPanel">
+      <h2>✅ 선지 판단</h2>
+      <div id="qArea"></div>
+      <div class="footer-actions">
+        <button class="main-btn" id="gradeBtn">채점하기</button>
+        <button class="main-btn" id="resetBtn">🔄 재시도</button>
+      </div>
+      <div id="scoreSummary"></div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ⚠️⚠️⚠️ 여기에 본인의 Google Apps Script 웹앱 URL을 붙여넣으세요 ⚠️⚠️⚠️ */
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwEjBnMgDdORG3NYur4qS0322ZMt0IV7FF9uGVAUjnhYvJGiDbc_jt91K72xuvKx9IO/exec";
+
+/* ===================== 데이터 ===================== */
+const DATA = {
+  passage: "CISG에 따르면 위험은 매매 계약이 체결된 시점부터 계약 내용의 이행이 완료된 시점에 이르는 동안 매도인에서 매수인으로 이전된다. 위험 이전은 매매 계약의 이행 과정에서 위험을 부담하는 주체가 변경되는 것을 의미한다. 위험이 매수인에게 이전되기 전에 양 당사자의 책임이 없는 사유로 물품이 멸실 또는 훼손되어 계약의 이행이 불가능하게 되었다면, 매도인이 여전히 물품을 공급할 부담을 지게 된다. 위험이 매수인에게 이전된 후에는 그 위험 부담을 매수인이 지게 되어 물품 대금을 지급할 의무가 있다. CISG의 위험 이전 규정이 적용되기 위해서는 국제 거래에서 매매 계약에 대해 당사자 간에 별도의 합의나 관행이 없고 매매 계약의 물품이 특정되어야 한다. ㉠매매 계약의 유형에 따른 위험 이전에 대한 CISG의 내용은 다음과 같다. 매매 계약에 물품의 운송이 포함되어 있고 매도인이 물품을 운송인에게 특정한 장소에서 인도할 의무가 없는 경우, 위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다. 이와 같이 위험 이전 시점을 정하는 이유는 운송의 결과에 따른 손해 배상과 보험금의 지급 청구 및 수령에 매수인이 매도인보다 용이하기 때문이다. 매매 계약에 물품의 운송이 포함되어 있고 매도인이 물품을 운송인에게 특정한 장소에서 인도할 의무가 있는 경우, 위험은 물품이 운송인에게 특정한 장소에서 인도되는 시점에 매수인에게 이전된다. 국제 거래에서는 매매 계약에 물품의 운송이 포함되어 있는 경우가 대부분이지만, 운송이 포함되어 있지 않은 경우도 있다. 예를 들어 매매 계약에 운송이 포함되어 있지 않고 매도인의 영업소에서 매수인이 물품을 수령해야 하는 경우에는, 매수인이 매도인의 영업소에서 물품을 수령했을 때 매수인에게 위험이 이전된다. 한편 원유, 천연가스와 같은 물품은 운송 중에 매매 계약이 빈번하게 이루어진다. 이 경우에는 물품에 관한 위험이 계약 체결 시에 매수인에게 이전된다. 위험 이전 시점은 물품 부적합에 대한 책임을 판단하는 기준이 될 수 있다. 물품 부적합이란 물품이 계약 내용이나 법적 안전 기준에 맞지 않는 상태를 의미한다. CISG에 따르면 물품 부적합이 위험 이전 시점 전에 존재했다면, 매도인이 그 책임을 지도록 하기 위해 매수인은 수령한 물품이 품질, 포장 등에서 계약에 합치하는지 확인할 의무가 있다.",
+  questions: [
+    {
+      id: 1,
+      questionText: "윗글과 관련하여 ㉠을 이해한 내용으로 가장 적절한 것은?",
+      choices: [
+        { num:1, text:"물품의 운송이 포함되어 있는 매매 계약의 경우 운송인이 위험 이전 시점을 결정할 수 있다.", isCorrect:true, evidenceText: [
+            "위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다.",
+            "위험은 물품이 운송인에게 특정한 장소에서 인도되는 시점에 매수인에게 이전된다."
+          ]
+        },
+        { num:2, text:"물품의 운송이 포함되어 있지 않은 매매 계약의 경우 물품이 특정되지 않아도 위험 이전이 될 수 있다.", isCorrect:true, evidenceText:"계약의 물품이 특정되어야 한다." },
+        { num:3, text:"운송 중에 있는 물품에 대해 체결된 매매 계약의 경우 계약 체결 시점이 위험 이전 시점이 될 수 있다.", isCorrect:false, evidenceText:"이 경우에는 물품에 관한 위험이 계약 체결 시에 매수인에게 이전된다." },
+        {
+          num:4,
+          text:"물품의 운송이 포함되어 있지 않은 매매 계약의 경우 물품 인도 장소가 특정한 장소로 지정되어 있으면 계약 체결 시점이 위험 이전 시점이 될 수 있다.",
+          isCorrect:true,
+          evidenceText:"매수인이 매도인의 영업소에서 물품을 수령했을 때 매수인에게 위험이 이전된다."
+        },
+        { num:5, text:"물품의 운송이 포함되어 있는 매매 계약의 경우 물품 인도 장소가 특정한 장소로 지정되어 있지 않으면 물품 부적합이 발생한 시점이 위험 이전 시점이 될 수 있다.", isCorrect:true, evidenceText:"위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다." }
+      ]
+    },
+    {
+      id: 2,
+      questionText: "다음은 국제 거래에서 이루어진 물품 매매 계약에 관한 사례를 정리한 메모이다. 윗글과 메모를 바탕으로 떠올린 내용으로 적절하지 않은 것은?",
+      choices: [
+        {
+          num:1,
+          text:"B가 발견한 ○○의 훼손에 대한 보험금의 지급 청구 및 수령은 A보다 B가 유리하다고 볼 수 있겠군.",
+          isCorrect:true,
+          evidenceText:"운송의 결과에 따른 손해 배상과 보험금의 지급 청구 및 수령에 매수인이 매도인보다 용이하기 때문이다."
+        },
+        { num:2, text:"A로부터 ○○를 인도받은 운송인이 B에게 운송한 시점에 위험이 A에서 B로 이전되었다고 볼 수 있겠군.", isCorrect:true, evidenceText:"위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다." },
+        { num:3, text:"태풍에 의한 침수로 ○○가 훼손되었음에도 B는 A에게 물품 대금을 지급할 의무를 져야 한다고 볼 수 있겠군.", isCorrect:false, evidenceText:"위험이 매수인에게 이전된 후에는 그 위험 부담을 매수인이 지게 되어 물품 대금을 지급할 의무가 있다." },
+        { num:4, text:"B가 ○○를 수령한 직후 ○○의 훼손을 확인하였으므로, B는 물품이 계약에 합치하는지 확인할 의무를 수행했다고 볼 수 있겠군.", isCorrect:false, evidenceText:"매수인은 수령한 물품이 품질, 포장 등에서 계약에 합치하는지 확인할 의무가 있다." },
+        { num:5, text:"매매 계약이 체결된 시점의 위험 부담 주체는 A이고, 계약 내용의 이행이 완료된 시점의 위험 부담 주체는 B가 된다고 볼 수 있겠군.", isCorrect:false, evidenceText:"CISG에 따르면 위험은 매매 계약이 체결된 시점부터 계약 내용의 이행이 완료된 시점에 이르는 동안 매도인에서 매수인으로 이전된다." }
+      ]
+    }
+  ]
+};
+
+/* ===================== 학생 이름 처리 ===================== */
+let studentName = '';
+document.getElementById('startBtn').addEventListener('click', ()=>{
+  const val = document.getElementById('studentNameInput').value.trim();
+  if(!val){ alert('이름을 입력해주세요.'); return; }
+  studentName = val;
+  document.getElementById('nameModal').style.display = 'none';
+});
+document.getElementById('studentNameInput').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter') document.getElementById('startBtn').click();
+});
+
+/* ===================== 상태 ===================== */
+let state = {
+  score:0,
+  combo:0,
+  timerSec:0,
+  timerId:null,
+  started:false,
+  cardEvidence:{},
+  cardOX:{},
+  graded:false
+};
+const passageBox = document.getElementById('passageBox');
+const qArea = document.getElementById('qArea');
+const selPreview = document.getElementById('selPreview');
+
+function renderPassage(){
+  passageBox.innerHTML='';
+  const sentences = DATA.passage.split(/(?<=[.?!])\s+/);
+  let globalIndex = 0;
+  sentences.forEach((sentence, li)=>{
+    const lineDiv = document.createElement('div');
+    lineDiv.className='line';
+    const noSpan = document.createElement('div');
+    noSpan.className='lineno';
+    noSpan.textContent = (li+1);
+    const textSpan = document.createElement('div');
+    textSpan.className='linetext';
+    textSpan.dataset.line = li;
+    for(const ch of sentence){
+      const charSpan = document.createElement('span');
+      charSpan.textContent = ch;
+      charSpan.dataset.gidx = globalIndex;
+      textSpan.appendChild(charSpan);
+      globalIndex++;
+    }
+    if(li < sentences.length-1){
+      globalIndex++;
+    }
+    lineDiv.appendChild(noSpan);
+    lineDiv.appendChild(textSpan);
+    passageBox.appendChild(lineDiv);
+  });
+}
+renderPassage();
+
+let currentSelectionRange = null;
+
+/* 모바일 대응: mouseup + touchend 둘 다 처리 */
+function handleSelectionEnd(){
+  const sel = window.getSelection();
+  if(!sel || sel.isCollapsed || sel.toString().trim().length===0){
+    return;
+  }
+  const text = sel.toString().trim();
+  const spans = passageBox.querySelectorAll('span[data-gidx]');
+  let minIdx = Infinity, maxIdx = -Infinity;
+  spans.forEach(sp=>{
+    if(sel.containsNode(sp, true)){
+      const idx = parseInt(sp.dataset.gidx);
+      if(idx < minIdx) minIdx = idx;
+      if(idx > maxIdx) maxIdx = idx;
+    }
+  });
+  if(minIdx===Infinity) return;
+  currentSelectionRange = { start:minIdx, end:maxIdx, text };
+  selPreview.innerHTML = `선택된 문장: <b>"${escapeHtml(text)}"</b> <span style="color:#666;">(근거로 지정할 선지의 [📍 근거 추가] 버튼을 눌러주세요.)</span>`;
+}
+passageBox.addEventListener('mouseup', handleSelectionEnd);
+passageBox.addEventListener('touchend', ()=>{
+  setTimeout(handleSelectionEnd, 100); // 모바일에서 selection이 늦게 반영되는 경우 대비
+});
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function renderQuestions(){
+  qArea.innerHTML='';
+  DATA.questions.forEach(q=>{
+    const qWrap = document.createElement('div');
+    qWrap.className='q-block';
+    const qHeader = document.createElement('div');
+    qHeader.className='question-header';
+    qHeader.innerHTML = `
+      <div class="q-index-badge">문제 ${q.id}</div>
+      <div class="q-main-text">${escapeHtml(q.questionText)}</div>
+    `;
+    qWrap.appendChild(qHeader);
+    q.choices.forEach(choice=>{
+      const key = `${q.id}-${choice.num}`;
+      const card = document.createElement('div');
+      card.className='choice-card';
+      card.dataset.key = key;
+      const requiredCount = Array.isArray(choice.evidenceText) ? choice.evidenceText.length : 1;
+      const hintText = requiredCount > 1 ? `이 선지는 근거 문장이 ${requiredCount}개 필요할 수 있습니다.` : '';
+      card.innerHTML = `
+        <div class="choice-top">
+          <span class="choice-num">${choice.num}</span>
+          <div class="choice-text">${escapeHtml(choice.text)}</div>
+        </div>
+        <div class="ox-toggle">
+          <button class="ox-btn o-btn" data-val="O">O (일치)</button>
+          <button class="ox-btn x-btn" data-val="X">X (불일치)</button>
+        </div>
+        <div class="card-controls">
+          <button class="mini-btn add-btn assign-evidence">📍 근거 추가</button>
+          <button class="mini-btn clear-evidence">전체 지우기</button>
+        </div>
+        ${hintText ? `<div class="evidence-count-hint">💡 ${hintText}</div>` : ''}
+        <div class="evidence-list"></div>
+        <div class="result-icon"></div>
+      `;
+      qWrap.appendChild(card);
+      card.querySelectorAll('.ox-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          if(state.graded) return;
+          card.querySelectorAll('.ox-btn').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          state.cardOX[key] = btn.dataset.val;
+        });
+      });
+      card.querySelector('.assign-evidence').addEventListener('click', ()=>{
+        if(state.graded) return;
+        if(!currentSelectionRange){
+          alert('먼저 지문에서 문장을 드래그(또는 길게 눌러 선택)해주세요.');
+          return;
+        }
+        if(!state.cardEvidence[key]) state.cardEvidence[key] = [];
+        const dup = state.cardEvidence[key].some(ev => ev.start===currentSelectionRange.start && ev.end===currentSelectionRange.end);
+        if(dup){
+          alert('이미 추가된 근거입니다.');
+          return;
+        }
+        state.cardEvidence[key].push({ ...currentSelectionRange });
+        renderEvidenceList(card, key);
+        highlightRange(currentSelectionRange.start, currentSelectionRange.end, 'ev-picked');
+        startTimerIfNeeded();
+        window.getSelection().removeAllRanges();
+      });
+      card.querySelector('.clear-evidence').addEventListener('click', ()=>{
+        if(state.graded) return;
+        delete state.cardEvidence[key];
+        renderEvidenceList(card, key);
+        reRenderHighlights();
+      });
+    });
+    qArea.appendChild(qWrap);
+  });
+}
+renderQuestions();
+
+function renderEvidenceList(card, key){
+  const listEl = card.querySelector('.evidence-list');
+  const list = state.cardEvidence[key] || [];
+  listEl.innerHTML = '';
+  list.forEach((ev, idx)=>{
+    const item = document.createElement('div');
+    item.className='evidence-item';
+    item.innerHTML = `
+      <span class="ev-text">근거 ${idx+1}: "${escapeHtml(ev.text)}"</span>
+      <button class="ev-remove" data-idx="${idx}">✕</button>
+    `;
+    item.querySelector('.ev-remove').addEventListener('click', ()=>{
+      if(state.graded) return;
+      state.cardEvidence[key].splice(idx,1);
+      if(state.cardEvidence[key].length===0) delete state.cardEvidence[key];
+      renderEvidenceList(card, key);
+      reRenderHighlights();
+    });
+    listEl.appendChild(item);
+  });
+}
+
+let highlightRecords = [];
+function highlightRange(start, end, className){
+  highlightRecords.push({start, end, className});
+  applyAllHighlights();
+}
+function reRenderHighlights(){
+  const activeRanges = [];
+  Object.values(state.cardEvidence).forEach(list=>{
+    list.forEach(ev=> activeRanges.push(ev));
+  });
+  highlightRecords = highlightRecords.filter(rec=>{
+    if(rec.className !== 'ev-picked') return true;
+    return activeRanges.some(r=> r.start===rec.start && r.end===rec.end);
+  });
+  applyAllHighlights();
+}
+function applyAllHighlights(){
+  const spans = passageBox.querySelectorAll('span[data-gidx]');
+  spans.forEach(sp=>{
+    sp.className='';
+  });
+  const ordered = [...highlightRecords].sort((a,b)=>{
+    const rank = c => c==='ev-picked' ? 0 : 1;
+    return rank(a.className) - rank(b.className);
+  });
+  ordered.forEach(rec=>{
+    for(let i=rec.start;i<=rec.end;i++){
+      const span = passageBox.querySelector(`span[data-gidx="${i}"]`);
+      if(span){
+        span.classList.add(rec.className);
+      }
+    }
+  });
+}
+
+function findTextRangeInPassage(targetText){
+  const clean = targetText.trim();
+  const idx = DATA.passage.indexOf(clean);
+  if(idx === -1) return null;
+  return { start: idx, end: idx + clean.length - 1 };
+}
+function normalize(str){
+  return str.replace(/\s+/g,'').trim();
+}
+function isTextSimilar(userText, correctText){
+  if(!userText) return false;
+  const u = normalize(userText);
+  const c = normalize(correctText);
+  if(u.length===0) return false;
+  if(c.includes(u) || u.includes(c)) return true;
+  let common = longestCommonSubstring(u, c);
+  const ratio = common / Math.min(u.length, c.length);
+  return ratio >= 0.6;
+}
+function longestCommonSubstring(a,b){
+  let max=0;
+  const dp = Array.from({length:a.length+1},()=>new Array(b.length+1).fill(0));
+  for(let i=1;i<=a.length;i++){
+    for(let j=1;j<=b.length;j++){
+      if(a[i-1]===b[j-1]){
+        dp[i][j] = dp[i-1][j-1]+1;
+        if(dp[i][j] > max) max = dp[i][j];
+      }
+    }
+  }
+  return max;
+}
+function evaluateEvidenceMatch(userEvidenceList, correctEvidence){
+  const correctArr = Array.isArray(correctEvidence) ? correctEvidence : [correctEvidence];
+  if(!userEvidenceList || userEvidenceList.length===0){
+    return { matched:0, total: correctArr.length, isFull:false, matchRatio:0 };
+  }
+  let matchedCount = 0;
+  correctArr.forEach(correctText=>{
+    const found = userEvidenceList.some(ev => isTextSimilar(ev.text, correctText));
+    if(found) matchedCount++;
+  });
+  const matchRatio = matchedCount / correctArr.length;
+  return { matched: matchedCount, total: correctArr.length, isFull: matchedCount===correctArr.length, matchRatio };
+}
+
+function startTimerIfNeeded(){
+  if(state.started) return;
+  state.started = true;
+  state.timerId = setInterval(()=>{
+    state.timerSec++;
+    const m = String(Math.floor(state.timerSec/60)).padStart(2,'0');
+    const s = String(state.timerSec%60).padStart(2,'0');
+    document.getElementById('timerDisplay').textContent = `${m}:${s}`;
+  },1000);
+}
+function stopTimer(){
+  if(state.timerId){
+    clearInterval(state.timerId);
+    state.timerId=null;
+  }
+}
+
+/* ===================== 채점 + 구글시트 전송 ===================== */
+document.getElementById('gradeBtn').addEventListener('click', ()=>{
+  if(state.graded) return;
+
+  if(!studentName){
+    alert('이름을 입력하지 않으셨습니다. 새로고침 후 이름을 입력해주세요.');
+    return;
+  }
+
+  stopTimer();
+  state.graded = true;
+  document.getElementById('gradeBtn').disabled = true;
+
+  let totalScore = 0;
+  let totalChoices = 0;
+
+  DATA.questions.forEach(q=>{
+    q.choices.forEach(choice=>{
+      totalChoices++;
+      const key = `${q.id}-${choice.num}`;
+      const card = qArea.querySelector(`.choice-card[data-key="${key}"]`);
+      const userOX = state.cardOX[key];
+      const correctOX = choice.isCorrect ? 'O' : 'X';
+      const oxCorrect = userOX === correctOX;
+      const userEvidenceList = state.cardEvidence[key] || [];
+      const evalResult = evaluateEvidenceMatch(userEvidenceList, choice.evidenceText);
+      const evidenceOk = evalResult.isFull;
+      const evidencePartialScore = Math.round(50 * evalResult.matchRatio);
+      let pts = 0;
+      if(oxCorrect) pts += 50;
+      pts += evidencePartialScore;
+      totalScore += pts;
+
+      if(oxCorrect && evidenceOk){
+        state.combo++;
+        spawnScorePop(card, '+100 🔥');
+        card.classList.add('correct-flash');
+      } else if(pts > 0){
+        state.combo = 0;
+        spawnScorePop(card, `+${pts}`);
+      } else {
+        state.combo = 0;
+        card.classList.add('wrong-flash');
+      }
+
+      const correctArr = Array.isArray(choice.evidenceText) ? choice.evidenceText : [choice.evidenceText];
+      const correctEvidenceDisplay = correctArr.map(t=>`"${t}"`).join('  +  ');
+      const resultBox = card.querySelector('.result-icon');
+      resultBox.classList.add('show');
+
+      if(oxCorrect && evidenceOk){
+        resultBox.className='result-icon show ok';
+        resultBox.textContent = `✅ 정답! O/X 정확 + 근거 ${evalResult.matched}/${evalResult.total}개 모두 정확 (100점)`;
+      } else if(oxCorrect && !evidenceOk){
+        resultBox.className='result-icon show partial';
+        resultBox.textContent = `⚠️ O/X는 맞았지만 근거 ${evalResult.matched}/${evalResult.total}개만 일치 (${50+evidencePartialScore}점) — 정답 근거: ${correctEvidenceDisplay}`;
+      } else if(!oxCorrect && evidenceOk){
+        resultBox.className='result-icon show partial';
+        resultBox.textContent = `⚠️ 근거는 모두 정확했지만 O/X 판단 오류 (${evidencePartialScore}점) — 정답: ${correctOX}`;
+      } else if(!oxCorrect && evalResult.matched > 0){
+        resultBox.className='result-icon show partial';
+        resultBox.textContent = `⚠️ O/X 오류 + 근거 일부만 일치 (${evidencePartialScore}점) — 정답: ${correctOX} / 정답 근거: ${correctEvidenceDisplay}`;
+      } else {
+        resultBox.className='result-icon show bad';
+        resultBox.textContent = `❌ 오답 — 정답: ${correctOX} / 정답 근거: ${correctEvidenceDisplay}`;
+      }
+
+      correctArr.forEach(correctText=>{
+        const range = findTextRangeInPassage(correctText);
+        if(range){
+          const wasMatched = userEvidenceList.some(ev => isTextSimilar(ev.text, correctText));
+          highlightRecords.push({
+            start: range.start,
+            end: range.end,
+            className: wasMatched ? 'ev-correct' : 'ev-wrong'
+          });
+        }
+      });
+    });
+  });
+
+  applyAllHighlights();
+  state.score += totalScore;
+  document.getElementById('scoreDisplay').textContent = state.score;
+  document.getElementById('comboDisplay').textContent = state.combo;
+
+  const summary = document.getElementById('scoreSummary');
+  summary.classList.add('show');
+  const percent = Math.round((totalScore/(totalChoices*100))*100);
+  const timeSpentStr = document.getElementById('timerDisplay').textContent;
+
+  summary.innerHTML = `
+    <h3>📊 채점 결과</h3>
+    <p>이번 채점 점수: <b style="color:var(--yellow)">${totalScore}</b> / ${totalChoices*100}점 (${percent}%)</p>
+    <p>⏱ 소요 시간: ${timeSpentStr}</p>
+    <div id="sendStatus" class="sending">📡 선생님께 결과 전송 중...</div>
+  `;
+
+  /* ---- 구글 시트로 전송 ---- */
+  sendResultToSheet({
+    studentName: studentName,
+    score: totalScore,
+    totalScore: totalChoices * 100,
+    percent: percent,
+    timeSpent: timeSpentStr
+  });
+});
+
+function sendResultToSheet(payload){
+  const statusEl = ()=> document.getElementById('sendStatus');
+
+  if(!GAS_URL || GAS_URL.includes('여기에')){
+    if(statusEl()){
+      statusEl().className = 'error';
+      statusEl().textContent = '⚠️ 전송 URL이 설정되지 않았습니다. (선생님께 문의)';
+    }
+    return;
+  }
+
+  fetch(GAS_URL, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: {'Content-Type': 'text/plain;charset=utf-8'},
+    body: JSON.stringify(payload)
+  })
+  .then(()=>{
+    // no-cors 모드에서는 응답 내용을 읽을 수 없으므로 요청이 나갔다는 것 자체로 성공 처리
+    if(statusEl()){
+      statusEl().className = 'sent';
+      statusEl().textContent = '✅ 선생님께 결과가 전송되었습니다!';
+    }
+  })
+  .catch((err)=>{
+    if(statusEl()){
+      statusEl().className = 'error';
+      statusEl().textContent = '❌ 전송 실패. 인터넷 연결을 확인해주세요. (' + err + ')';
+    }
+  });
+}
+
+function spawnScorePop(cardEl, text){
+  const rect = cardEl.getBoundingClientRect();
+  const pop = document.createElement('div');
+  pop.className='pop-score';
+  pop.textContent = text;
+  pop.style.left = (rect.left + rect.width/2 - 20) + 'px';
+  pop.style.top = (rect.top + 10) + 'px';
+  document.body.appendChild(pop);
+  setTimeout(()=> pop.remove(), 1000);
+}
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  stopTimer();
+  state = {
+    score: state.score,
+    combo:0,
+    timerSec:0,
+    timerId:null,
+    started:false,
+    cardEvidence:{},
+    cardOX:{},
+    graded:false
+  };
+  document.getElementById('gradeBtn').disabled = false;
+  document.getElementById('timerDisplay').textContent='00:00';
+  document.getElementById('comboDisplay').textContent='0';
+  document.getElementById('scoreDisplay').textContent = state.score;
+  document.getElementById('scoreSummary').classList.remove('show');
+  document.getElementById('scoreSummary').innerHTML = '';
+  highlightRecords = [];
+  currentSelectionRange = null;
+  selPreview.innerHTML = '지문에서 문장을 드래그하면 여기에 표시됩니다.';
+  renderQuestions();
+  applyAllHighlights();
+});
+
+document.getElementById('scoreDisplay').textContent = state.score;
+</script>
+</body>
+</html>
