@@ -2,702 +2,217 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>독서 근거 찾기 트레이너</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>답안 채점 시스템</title>
 <style>
-  :root{
-    --bg:#1e1e2e;
-    --panel:#262638;
-    --panel2:#2d2d44;
-    --border:#3d3d5c;
-    --text:#e4e4f0;
-    --sub:#9d9db8;
-    --accent:#7c9cff;
-    --accent2:#a78bfa;
-    --green:#4ade80;
-    --red:#f87171;
-    --yellow:#fbbf24;
+  body {
+    font-family: 'Malgun Gothic', sans-serif;
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #f5f7fa;
   }
-  *{box-sizing:border-box;}
-  body{
-    margin:0;
-    font-family: "Malgun Gothic","Apple SD Gothic Neo","Segoe UI",sans-serif;
-    background:var(--bg);
-    color:var(--text);
-    min-height:100vh;
+  h1 {
+    text-align: center;
+    color: #2c3e50;
   }
-  .app{
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
+  .card {
+    background: white;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
   }
-  header{
-    padding:14px 16px;
-    background:linear-gradient(90deg,#2a2a45,#1e1e2e);
-    border-bottom:1px solid var(--border);
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    flex-wrap:wrap;
-    gap:10px;
-    position:sticky;
-    top:0;
-    z-index:100;
+  label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: #34495e;
   }
-  header h1{
-    font-size:15px;
-    margin:0;
-    background:linear-gradient(90deg,var(--accent),var(--accent2));
-    -webkit-background-clip:text;
-    background-clip:text;
-    color:transparent;
+  select, input[type="file"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 16px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
   }
-  .stats{
-    display:flex;
-    gap:8px;
-    align-items:center;
-    font-size:12px;
-    flex-wrap:wrap;
+  button {
+    width: 100%;
+    padding: 14px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
   }
-  .stat-box{
-    background:var(--panel2);
-    border:1px solid var(--border);
-    border-radius:10px;
-    padding:5px 9px;
-    display:flex;
-    align-items:center;
-    gap:5px;
-    white-space:nowrap;
+  button:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
   }
-  .stat-box b{color:var(--yellow); font-size:13px;}
-  #comboDisplay{color:var(--accent2); font-weight:bold;}
-
-  /* 모바일에서는 탭으로 지문/문제 전환 */
-  .tab-bar{
-    display:none;
-    position:sticky;
-    top:0;
-    z-index:99;
-    background:var(--panel);
-    border-bottom:1px solid var(--border);
+  #preview {
+    max-width: 100%;
+    margin-top: 10px;
+    border-radius: 6px;
+    display: none;
   }
-  .tab-btn{
-    flex:1;
-    padding:12px;
-    text-align:center;
-    background:none;
-    border:none;
-    color:var(--sub);
-    font-weight:bold;
-    font-size:14px;
-    cursor:pointer;
-    border-bottom:3px solid transparent;
+  #result {
+    white-space: pre-wrap;
+    line-height: 1.6;
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+    margin-top: 16px;
+    display: none;
   }
-  .tab-btn.active{
-    color:var(--accent);
-    border-bottom-color:var(--accent);
+  .loading {
+    text-align: center;
+    color: #7f8c8d;
+    display: none;
   }
-
-  main{
-    flex:1;
-    display:flex;
-    gap:16px;
-    padding:12px;
+  .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    animation: spin 1s linear infinite;
+    margin: 10px auto;
   }
-  @media (max-width:900px){
-    main{
-      flex-direction:column;
-      padding:8px;
-      gap:0;
-    }
-    .tab-bar{display:flex;}
-    .panel{display:none;}
-    .panel.mobile-active{display:flex;}
-  }
-
-  .panel{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:14px;
-    flex:1 1 50%;
-    min-width:0;
-    display:flex;
-    flex-direction:column;
-    box-shadow:0 4px 20px rgba(0,0,0,0.25);
-  }
-  .panel h2{
-    margin:0 0 12px;
-    font-size:13px;
-    color:var(--sub);
-    display:flex;
-    align-items:center;
-    gap:8px;
-    border-bottom:1px solid var(--border);
-    padding-bottom:10px;
-  }
-  #passageBox{
-    overflow-y:auto;
-    max-height:60vh;
-    font-size:16px;
-    line-height:2.1;
-    user-select:text;
-    -webkit-user-select:text;
-    -webkit-touch-callout:default;
-    padding-right:4px;
-    word-break:keep-all;
-  }
-  @media (max-width:900px){
-    #passageBox{max-height:calc(100vh - 260px);}
-    #qArea{max-height:calc(100vh - 260px) !important;}
-  }
-  .line{
-    display:flex;
-    gap:8px;
-    padding:3px 4px;
-    border-radius:6px;
-  }
-  .lineno{
-    color:#565676;
-    font-size:11px;
-    width:20px;
-    text-align:right;
-    flex-shrink:0;
-    user-select:none;
-    padding-top:4px;
-  }
-  .linetext{flex:1;}
-  .linetext span{
-    -webkit-user-select:text;
-    user-select:text;
-  }
-  mark.ev-picked{
-    background:rgba(124,156,255,0.35);
-    color:#fff;
-    border-radius:3px;
-    padding:0 1px;
-  }
-  mark.ev-correct{
-    background:rgba(74,222,128,0.4);
-    color:#fff;
-    border-radius:3px;
-    padding:0 1px;
-    box-shadow:0 0 6px rgba(74,222,128,0.5);
-  }
-  mark.ev-wrong{
-    background:rgba(248,113,113,0.35);
-    color:#fff;
-    border-radius:3px;
-    padding:0 1px;
-  }
-  #selPreview{
-    margin-top:10px;
-    font-size:12.5px;
-    color:var(--sub);
-    background:var(--panel2);
-    border:1px dashed var(--border);
-    border-radius:8px;
-    padding:10px 12px;
-    min-height:20px;
-    word-break:break-word;
-    line-height:1.6;
-  }
-  #selPreview b{color:var(--accent);}
-  #qArea{overflow-y:auto; max-height:60vh; padding-right:4px;}
-  .q-block{
-    margin-bottom:28px;
-    padding-bottom:20px;
-    border-bottom:1px dashed var(--border);
-  }
-  .q-block:last-child{border-bottom:none;}
-  .question-header{
-    background:linear-gradient(135deg, rgba(124,156,255,0.18), rgba(167,139,250,0.12));
-    border:1px solid var(--accent);
-    border-radius:12px;
-    padding:14px 16px;
-    margin-bottom:16px;
-    margin-top: 4px;
-  }
-  .question-header .q-index-badge{
-    display:inline-block;
-    background:var(--accent);
-    color:#0d0d16;
-    font-size:11px;
-    font-weight:bold;
-    padding:2px 8px;
-    border-radius:20px;
-    margin-bottom:6px;
-  }
-  .question-header .q-main-text{
-    font-size:15.5px;
-    font-weight:bold;
-    color:#ffffff;
-    line-height:1.4;
-  }
-  .choice-card{
-    background:var(--panel2);
-    border:1px solid var(--border);
-    border-radius:12px;
-    padding:14px;
-    margin-bottom:12px;
-    transition:box-shadow .2s;
-    position:relative;
-    overflow:hidden;
-  }
-  .choice-card.correct-flash{ animation:flashGreen .8s ease; }
-  .choice-card.wrong-flash{ animation:flashRed .8s ease; }
-  @keyframes flashGreen{
-    0%{box-shadow:0 0 0 0 rgba(74,222,128,0.7);}
-    100%{box-shadow:0 0 0 12px rgba(74,222,128,0);}
-  }
-  @keyframes flashRed{
-    0%{box-shadow:0 0 0 0 rgba(248,113,113,0.7);}
-    100%{box-shadow:0 0 0 12px rgba(248,113,113,0);}
-  }
-  .choice-top{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-start;
-    gap:8px;
-  }
-  .choice-num{
-    display:inline-block;
-    background:var(--accent);
-    color:#0d0d16;
-    font-weight:bold;
-    border-radius:50%;
-    width:22px;height:22px;
-    text-align:center;
-    line-height:22px;
-    font-size:12px;
-    flex-shrink:0;
-  }
-  .choice-text{
-    flex:1;
-    font-size:14.5px;
-    line-height:1.5;
-  }
-  .ox-toggle{
-    display:flex;
-    gap:6px;
-    margin:10px 0;
-  }
-  .ox-btn{
-    flex:1;
-    padding:11px 0;
-    border-radius:8px;
-    border:1px solid var(--border);
-    background:transparent;
-    color:var(--sub);
-    cursor:pointer;
-    font-weight:bold;
-    transition:.15s;
-    font-size:14px;
-  }
-  .ox-btn.o-btn.active{
-    background:rgba(74,222,128,0.2);
-    border-color:var(--green);
-    color:var(--green);
-  }
-  .ox-btn.x-btn.active{
-    background:rgba(248,113,113,0.2);
-    border-color:var(--red);
-    color:var(--red);
-  }
-  .card-controls{
-    display:flex;
-    gap:8px;
-    margin-top:6px;
-    flex-wrap:wrap;
-  }
-  .mini-btn{
-    font-size:13px;
-    background:var(--panel);
-    border:1px solid var(--border);
-    color:var(--text);
-    padding:10px 12px;
-    border-radius:8px;
-    cursor:pointer;
-    transition:.15s;
-    flex:1;
-    min-width:120px;
-  }
-  .mini-btn.add-btn{
-    border-color:var(--accent);
-    color:var(--accent);
-    font-weight:bold;
-  }
-  .evidence-list{
-    margin-top:8px;
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-  }
-  .evidence-item{
-    font-size:12px;
-    background:rgba(124,156,255,0.08);
-    border:1px solid rgba(124,156,255,0.3);
-    border-radius:8px;
-    padding:8px 8px 8px 10px;
-    color:#cfd6ff;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:8px;
-  }
-  .evidence-item .ev-text{flex:1; word-break:break-word;}
-  .evidence-item .ev-remove{
-    flex-shrink:0;
-    background:none;
-    border:none;
-    color:var(--red);
-    cursor:pointer;
-    font-size:14px;
-    font-weight:bold;
-    padding:4px 8px;
-    border-radius:6px;
-  }
-  .evidence-count-hint{
-    font-size:11px;
-    color:var(--sub);
-    margin-top:4px;
-  }
-  .result-icon{
-    font-size:12.5px;
-    font-weight:bold;
-    margin-top:8px;
-    display:none;
-    border-radius:8px;
-    padding:8px 10px;
-    line-height:1.6;
-  }
-  .result-icon.show{display:block;}
-  .result-icon.ok{background:rgba(74,222,128,0.15); color:var(--green);}
-  .result-icon.bad{background:rgba(248,113,113,0.15); color:var(--red);}
-  .result-icon.partial{background:rgba(251,191,36,0.15); color:var(--yellow);}
-  .footer-actions{
-    margin-top:14px;
-    display:flex;
-    gap:10px;
-    flex-wrap:wrap;
-    position:sticky;
-    bottom:0;
-    background:var(--panel);
-    padding-top:10px;
-  }
-  .main-btn{
-    flex:1;
-    padding:15px;
-    font-size:15px;
-    font-weight:bold;
-    border:none;
-    border-radius:10px;
-    cursor:pointer;
-  }
-  #gradeBtn{
-    background:linear-gradient(90deg,var(--accent),var(--accent2));
-    color:#10101c;
-  }
-  #gradeBtn:disabled{opacity:0.5;}
-  #resetBtn{
-    background:transparent;
-    border:1px solid var(--border);
-    color:var(--sub);
-  }
-  #scoreSummary{
-    margin-top:14px;
-    padding:14px;
-    border-radius:10px;
-    background:var(--panel2);
-    border:1px solid var(--border);
-    display:none;
-  }
-  #scoreSummary.show{display:block;}
-  #scoreSummary h3{margin:0 0 8px; font-size:15px; color:#fff;}
-  #sendStatus{
-    font-size:12px;
-    margin-top:8px;
-    padding:8px 10px;
-    border-radius:8px;
-  }
-  #sendStatus.sending{background:rgba(251,191,36,0.15); color:var(--yellow);}
-  #sendStatus.sent{background:rgba(74,222,128,0.15); color:var(--green);}
-  #sendStatus.error{background:rgba(248,113,113,0.15); color:var(--red);}
-  .pop-score{
-    position:fixed;
-    font-weight:bold;
-    font-size:20px;
-    color:var(--yellow);
-    pointer-events:none;
-    z-index:999;
-    animation:popUp 1s ease forwards;
-  }
-  @keyframes popUp{
-    0%{opacity:1; transform:translateY(0) scale(1);}
-    100%{opacity:0; transform:translateY(-60px) scale(1.3);}
-  }
-  ::-webkit-scrollbar{width:6px;}
-  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:4px;}
-
-  #nameModal{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.9);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:2000;
-    padding:20px;
-  }
-  #nameModal .modal-box{
-    background:var(--panel);
-    border:1px solid var(--border);
-    padding:28px 22px;
-    border-radius:16px;
-    width:100%;
-    max-width:340px;
-    box-shadow:0 10px 40px rgba(0,0,0,0.5);
-  }
-  #nameModal h3{ margin:0 0 6px; color:#fff; font-size:18px; }
-  #nameModal p{ margin:0 0 16px; color:var(--sub); font-size:13px; line-height:1.5; }
-  #studentNameInput{
-    width:100%;
-    padding:13px;
-    border-radius:10px;
-    border:1px solid var(--border);
-    background:var(--bg);
-    color:#fff;
-    margin-bottom:14px;
-    font-size:15px;
-  }
-  #startBtn{
-    width:100%;
-    padding:14px;
-    background:linear-gradient(90deg,var(--accent),var(--accent2));
-    border:none;
-    border-radius:10px;
-    color:#10101c;
-    font-weight:bold;
-    font-size:15px;
-  }
-
-  /* 도움말 배너 */
-  .help-banner{
-    background:rgba(124,156,255,0.1);
-    border:1px solid rgba(124,156,255,0.3);
-    border-radius:10px;
-    padding:10px 12px;
-    font-size:12px;
-    color:#b8c4ff;
-    margin-bottom:10px;
-    line-height:1.5;
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
   }
 </style>
 </head>
 <body>
 
-<div id="nameModal">
-  <div class="modal-box">
-    <h3>📖 독서 근거 찾기 트레이너</h3>
-    <p>이름(또는 반+번호+이름)을 입력한 뒤 시작해주세요.<br>결과가 선생님께 자동으로 전송됩니다.</p>
-    <input id="studentNameInput" type="text" placeholder="예: 3-2 홍길동" autocomplete="off">
-    <button id="startBtn">시작하기</button>
-  </div>
-</div>
+<h1>📝 답안 채점 시스템</h1>
 
-<div class="app">
-  <header>
-    <h1>📖 근거 찾기 트레이너</h1>
-    <div class="stats">
-      <div class="stat-box">⏱ <b id="timerDisplay">00:00</b></div>
-      <div class="stat-box">🔥 <span id="comboDisplay">0</span></div>
-      <div class="stat-box">🏆 <b id="scoreDisplay">0</b></div>
-    </div>
-  </header>
+<div class="card">
+  <label for="lessonSelect">차시 선택</label>
+  <select id="lessonSelect">
+    <option value="">불러오는 중...</option>
+  </select>
 
-  <div class="tab-bar">
-    <button class="tab-btn active" id="tabPassage">📄 지문 보기</button>
-    <button class="tab-btn" id="tabQuestion">✅ 문제 풀기</button>
+  <label for="imageInput">답안 사진 업로드</label>
+  <input type="file" id="imageInput" accept="image/*" capture="environment">
+  <img id="preview" alt="미리보기">
+
+  <button id="submitBtn" onclick="submitAnswer()">채점하기</button>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>AI가 채점 중입니다...</p>
   </div>
 
-  <main>
-    <section class="panel mobile-active" id="passagePanel">
-      <h2>📄 지문 (문장을 손가락으로 길게 눌러 선택)</h2>
-      <div class="help-banner">
-        💡 <b>모바일 사용법</b><br>
-        1) 문장을 <b>손가락으로 꾹 누르세요</b> (길게 터치)<br>
-        2) 파란색 핸들이 나오면 <b>드래그</b>해서 범위를 조절하세요<br>
-        3) 아래에 선택 문장이 나타나면, <b>하단 탭에서 "문제 풀기"</b>로 이동해 해당 선지의 [📍 근거 추가] 버튼을 누르세요
-      </div>
-      <div id="passageBox"></div>
-      <div id="selPreview">지문에서 문장을 선택하면 여기에 표시됩니다.</div>
-    </section>
-
-    <section class="panel" id="questionPanel">
-      <h2>✅ 선지 판단</h2>
-      <div id="qArea"></div>
-      <div class="footer-actions">
-        <button class="main-btn" id="gradeBtn">채점하기</button>
-        <button class="main-btn" id="resetBtn">🔄 재시도</button>
-      </div>
-      <div id="scoreSummary"></div>
-    </section>
-  </main>
+  <div id="result"></div>
 </div>
 
 <script>
-/* ⚠️⚠️⚠️ 아래 줄의 따옴표 안에 본인의 구글 앱스스크립트 웹앱 URL을 붙여넣으세요 ⚠️⚠️⚠️ */
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwEjBnMgDdORG3NYur4qS0322ZMt0IV7FF9uGVAUjnhYvJGiDbc_jt91K72xuvKx9IO/exec";
+  // ⭐ 여기에 2단계에서 복사한 GAS 웹앱 URL을 붙여넣으세요
+  const GAS_URL = 'https://script.google.com/macros/s/AKfycbyMDm2h8QKJZ5NJ0N1-Xpj01I3JeK9EwHw9vfCzy7sPKk6OC7waBNriuCnktEB6su_hQA/exec';
 
-/* ===================== 문제 데이터 ===================== */
-const DATA = {
-  passage: "CISG에 따르면 위험은 매매 계약이 체결된 시점부터 계약 내용의 이행이 완료된 시점에 이르는 동안 매도인에서 매수인으로 이전된다. 위험 이전은 매매 계약의 이행 과정에서 위험을 부담하는 주체가 변경되는 것을 의미한다. 위험이 매수인에게 이전되기 전에 양 당사자의 책임이 없는 사유로 물품이 멸실 또는 훼손되어 계약의 이행이 불가능하게 되었다면, 매도인이 여전히 물품을 공급할 부담을 지게 된다. 위험이 매수인에게 이전된 후에는 그 위험 부담을 매수인이 지게 되어 물품 대금을 지급할 의무가 있다. CISG의 위험 이전 규정이 적용되기 위해서는 국제 거래에서 매매 계약에 대해 당사자 간에 별도의 합의나 관행이 없고 매매 계약의 물품이 특정되어야 한다. ㉠매매 계약의 유형에 따른 위험 이전에 대한 CISG의 내용은 다음과 같다. 매매 계약에 물품의 운송이 포함되어 있고 매도인이 물품을 운송인에게 특정한 장소에서 인도할 의무가 없는 경우, 위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다. 이와 같이 위험 이전 시점을 정하는 이유는 운송의 결과에 따른 손해 배상과 보험금의 지급 청구 및 수령에 매수인이 매도인보다 용이하기 때문이다. 매매 계약에 물품의 운송이 포함되어 있고 매도인이 물품을 운송인에게 특정한 장소에서 인도할 의무가 있는 경우, 위험은 물품이 운송인에게 특정한 장소에서 인도되는 시점에 매수인에게 이전된다. 국제 거래에서는 매매 계약에 물품의 운송이 포함되어 있는 경우가 대부분이지만, 운송이 포함되어 있지 않은 경우도 있다. 예를 들어 매매 계약에 운송이 포함되어 있지 않고 매도인의 영업소에서 매수인이 물품을 수령해야 하는 경우에는, 매수인이 매도인의 영업소에서 물품을 수령했을 때 매수인에게 위험이 이전된다. 한편 원유, 천연가스와 같은 물품은 운송 중에 매매 계약이 빈번하게 이루어진다. 이 경우에는 물품에 관한 위험이 계약 체결 시에 매수인에게 이전된다. 위험 이전 시점은 물품 부적합에 대한 책임을 판단하는 기준이 될 수 있다. 물품 부적합이란 물품이 계약 내용이나 법적 안전 기준에 맞지 않는 상태를 의미한다. CISG에 따르면 물품 부적합이 위험 이전 시점 전에 존재했다면, 매도인이 그 책임을 지도록 하기 위해 매수인은 수령한 물품이 품질, 포장 등에서 계약에 합치하는지 확인할 의무가 있다.",
-  questions: [
-    {
-      id: 1,
-      questionText: "윗글과 관련하여 ㉠을 이해한 내용으로 가장 적절한 것은?",
-      choices: [
-        {
-          num:1,
-          text:"물품의 운송이 포함되어 있는 매매 계약의 경우 운송인이 위험 이전 시점을 결정할 수 있다.",
-          isCorrect:false,
-          evidenceText: [
-            "위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다.",
-            "위험은 물품이 운송인에게 특정한 장소에서 인도되는 시점에 매수인에게 이전된다."
-          ]
-        },
-        {
-          num:2,
-          text:"물품의 운송이 포함되어 있지 않은 매매 계약의 경우 물품이 특정되지 않아도 위험 이전이 될 수 있다.",
-          isCorrect:false,
-          evidenceText:"계약의 물품이 특정되어야 한다."
-        },
-        {
-          num:3,
-          text:"운송 중에 있는 물품에 대해 체결된 매매 계약의 경우 계약 체결 시점이 위험 이전 시점이 될 수 있다.",
-          isCorrect:true,
-          evidenceText:"이 경우에는 물품에 관한 위험이 계약 체결 시에 매수인에게 이전된다."
-        },
-        {
-          num:4,
-          text:"물품의 운송이 포함되어 있지 않은 매매 계약의 경우 물품 인도 장소가 특정한 장소로 지정되어 있으면 계약 체결 시점이 위험 이전 시점이 될 수 있다.",
-          isCorrect:false,
-          evidenceText:"매수인이 매도인의 영업소에서 물품을 수령했을 때 매수인에게 위험이 이전된다."
-        },
-        {
-          num:5,
-          text:"물품의 운송이 포함되어 있는 매매 계약의 경우 물품 인도 장소가 특정한 장소로 지정되어 있지 않으면 물품 부적합이 발생한 시점이 위험 이전 시점이 될 수 있다.",
-          isCorrect:false,
-          evidenceText:"위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다."
-        }
-      ]
-    },
-    {
-      id: 2,
-      questionText: "다음은 국제 거래에서 이루어진 물품 매매 계약에 관한 사례를 정리한 메모이다. 윗글과 메모를 바탕으로 떠올린 내용으로 적절하지 않은 것은?",
-      choices: [
-        {
-          num:1,
-          text:"B가 발견한 ○○의 훼손에 대한 보험금의 지급 청구 및 수령은 A보다 B가 유리하다고 볼 수 있겠군.",
-          isCorrect:true,
-          evidenceText:"운송의 결과에 따른 손해 배상과 보험금의 지급 청구 및 수령에 매수인이 매도인보다 용이하기 때문이다."
-        },
-        {
-          num:2,
-          text:"A로부터 ○○를 인도받은 운송인이 B에게 운송한 시점에 위험이 A에서 B로 이전되었다고 볼 수 있겠군.",
-          isCorrect:false,
-          evidenceText:"위험은 물품이 매도인으로부터 최초의 운송인에게 인도된 시점에 매수인에게 이전된다."
-        },
-        {
-          num:3,
-          text:"태풍에 의한 침수로 ○○가 훼손되었음에도 B는 A에게 물품 대금을 지급할 의무를 져야 한다고 볼 수 있겠군.",
-          isCorrect:true,
-          evidenceText:"위험이 매수인에게 이전된 후에는 그 위험 부담을 매수인이 지게 되어 물품 대금을 지급할 의무가 있다."
-        },
-        {
-          num:4,
-          text:"B가 ○○를 수령한 직후 ○○의 훼손을 확인하였으므로, B는 물품이 계약에 합치하는지 확인할 의무를 수행했다고 볼 수 있겠군.",
-          isCorrect:true,
-          evidenceText:"매수인은 수령한 물품이 품질, 포장 등에서 계약에 합치하는지 확인할 의무가 있다."
-        },
-        {
-          num:5,
-          text:"매매 계약이 체결된 시점의 위험 부담 주체는 A이고, 계약 내용의 이행이 완료된 시점의 위험 부담 주체는 B가 된다고 볼 수 있겠군.",
-          isCorrect:true,
-          evidenceText:"CISG에 따르면 위험은 매매 계약이 체결된 시점부터 계약 내용의 이행이 완료된 시점에 이르는 동안 매도인에서 매수인으로 이전된다."
-        }
-      ]
+  let selectedImageBase64 = null;
+  let selectedMimeType = null;
+
+  // 페이지 로드 시 차시 목록 가져오기
+  window.onload = function() {
+    loadLessonList();
+  };
+
+  function loadLessonList() {
+    fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'getLessonList' })
+    })
+    .then(res => res.json())
+    .then(data => {
+      const select = document.getElementById('lessonSelect');
+      select.innerHTML = '';
+      if (data.success && data.lessons.length > 0) {
+        data.lessons.forEach(lesson => {
+          const option = document.createElement('option');
+          option.value = lesson;
+          option.textContent = lesson;
+          select.appendChild(option);
+        });
+      } else {
+        select.innerHTML = '<option value="">등록된 차시가 없습니다</option>';
+      }
+    })
+    .catch(err => {
+      document.getElementById('lessonSelect').innerHTML = '<option value="">불러오기 실패</option>';
+      console.error(err);
+    });
+  }
+
+  // 이미지 업로드 처리
+  document.getElementById('imageInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    selectedMimeType = file.type;
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+      selectedImageBase64 = event.target.result; // data:image/...;base64,...
+      const preview = document.getElementById('preview');
+      preview.src = selectedImageBase64;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // 채점 요청
+  function submitAnswer() {
+    const lessonName = document.getElementById('lessonSelect').value;
+
+    if (!lessonName) {
+      alert('차시를 선택해주세요.');
+      return;
     }
-  ]
-};
-
-/* ===================== 학생 이름 입력 ===================== */
-let studentName = '';
-document.getElementById('startBtn').addEventListener('click', ()=>{
-  const val = document.getElementById('studentNameInput').value.trim();
-  if(!val){ alert('이름을 입력해주세요.'); return; }
-  studentName = val;
-  document.getElementById('nameModal').style.display = 'none';
-});
-document.getElementById('studentNameInput').addEventListener('keydown', (e)=>{
-  if(e.key === 'Enter') document.getElementById('startBtn').click();
-});
-
-/* ===================== 모바일 탭 전환 ===================== */
-const tabPassage = document.getElementById('tabPassage');
-const tabQuestion = document.getElementById('tabQuestion');
-const passagePanel = document.getElementById('passagePanel');
-const questionPanel = document.getElementById('questionPanel');
-
-tabPassage.addEventListener('click', ()=>{
-  tabPassage.classList.add('active');
-  tabQuestion.classList.remove('active');
-  passagePanel.classList.add('mobile-active');
-  questionPanel.classList.remove('mobile-active');
-});
-tabQuestion.addEventListener('click', ()=>{
-  tabQuestion.classList.add('active');
-  tabPassage.classList.remove('active');
-  questionPanel.classList.add('mobile-active');
-  passagePanel.classList.remove('mobile-active');
-});
-
-/* ===================== 상태 ===================== */
-let state = {
-  score:0,
-  combo:0,
-  timerSec:0,
-  timerId:null,
-  started:false,
-  cardEvidence:{},
-  cardOX:{},
-  graded:false
-};
-const passageBox = document.getElementById('passageBox');
-const qArea = document.getElementById('qArea');
-const selPreview = document.getElementById('selPreview');
-
-/* ===================== 지문 렌더링 ===================== */
-function renderPassage(){
-  passageBox.innerHTML='';
-  const sentences = DATA.passage.split(/(?<=[.?!])\s+/);
-  let globalIndex = 0;
-  sentences.forEach((sentence, li)=>{
-    const lineDiv = document.createElement('div');
-    lineDiv.className='line';
-    const noSpan = document.createElement('div');
-    noSpan.className='lineno';
-    noSpan.textContent = (li+1);
-    const textSpan = document.createElement('div');
-    textSpan.className='linetext';
-    for(const ch of sentence){
-      const charSpan = document.createElement('span');
-      charSpan.textContent = ch;
-      charSpan.dataset.gidx = globalIndex;
-      textSpan.appendChild(charSpan);
-      globalIndex++;
+    if (!selectedImageBase64) {
+      alert('답안 사진을 업로드해주세요.');
+      return;
     }
-    if(li < sentences.length-1){ globalIndex++; }
-    lineDiv.appendChild(noSpan);
-    lineDiv.appendChild(textSpan);
-    passage
+
+    document.getElementById('submitBtn').disabled = true;
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+
+    fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'grade',
+        lessonName: lessonName,
+        imageBase64: selectedImageBase64,
+        mimeType: selectedMimeType
+      })
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('submitBtn').disabled = false;
+
+      const resultDiv = document.getElementById('result');
+      resultDiv.style.display = 'block';
+
+      if (data.success) {
+        resultDiv.textContent = data.result;
+      } else {
+        resultDiv.textContent = '❌ 오류: ' + data.error;
+      }
+    })
+    .catch(err => {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('submitBtn').disabled = false;
+      document.getElementById('result').style.display = 'block';
+      document.getElementById('result').textContent = '❌ 요청 실패: ' + err;
+    });
+  }
+</script>
+
+</body>
+</html>
