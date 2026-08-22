@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>답안 채점 시스템</title>
+<title>독서와 작문 학습지 빈칸 채점</title>
 <style>
   body {
     font-family: 'Malgun Gothic', sans-serif;
@@ -58,7 +58,6 @@
     display: none;
   }
   #result {
-    white-space: pre-wrap;
     line-height: 1.6;
     background: #f8f9fa;
     padding: 16px;
@@ -66,6 +65,21 @@
     margin-top: 16px;
     display: none;
   }
+  #result h1, #result h2, #result h3, #result h4 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+#result strong {
+  color: #2b6cb0;
+}
+#result hr {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 16px 0;
+}
+#result ul, #result ol {
+  padding-left: 20px;
+}
   .loading {
     text-align: center;
     color: #7f8c8d;
@@ -85,10 +99,11 @@
     100% { transform: rotate(360deg); }
   }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
 <body>
 
-<h1>📝 답안 채점 시스템</h1>
+<h1>📝 독서와 작문 학습지 빈칸 채점</h1>
 
 <div class="card">
   <label for="lessonSelect">차시 선택</label>
@@ -200,10 +215,10 @@
       resultDiv.style.display = 'block';
 
       if (data.success) {
-        resultDiv.textContent = data.result;
-      } else {
-        resultDiv.textContent = '❌ 오류: ' + data.error;
-      }
+  resultDiv.innerHTML = marked.parse(data.result);
+} else {
+  resultDiv.textContent = '❌ 오류: ' + data.error;
+}
     })
     .catch(err => {
       document.getElementById('loading').style.display = 'none';
